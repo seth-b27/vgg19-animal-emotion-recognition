@@ -4,18 +4,6 @@ Overview
 --------
 This notebook implements a transfer-learning pipeline using VGG19 to classify pet facial expressions into four categories: Angry, happy, Other, Sad. It includes dataset preprocessing (resize & split), data augmentation, model training with two batch sizes (32 and 64), and evaluation (confusion matrices, ROC/AUC). While the primary goal is to compare the performance between batch size 32 and 64, , fine-tuning the superior model will also be included.
 
-Project structure
------------------
-- `pet_facial_expression_dataset/` — input raw dataset (expected subfolders: `Angry`, `happy`, `Other`, `Sad`)
-- Notebook cells preprocess images and save to:
-	- `preprocess_dataset/train/<category>/`
-	- `preprocess_dataset/validation/<category>/`
-	- `preprocess_dataset/test/<category>/`
-- Model weights produced during runs:
-	- `weights_batch32.h5`
-	- `weights_batch64.h5`
-	- `weights_batch64_final-tuned.h5`
-
 Workflow (run cells top-to-bottom)
 -------------------------------------------
 1. Data preprocessing
@@ -63,7 +51,7 @@ Note: VGG19 requires specific preprocessing (mean subtraction, not 0-1 normaliza
 - Plot ROC curves and calculate AUC for each class
 - Compare performance metrics
 
-6. Fine-Tuning (Optional) the best-performing model weights (batch_size=64)
+6. Fine-Tuning the best-performing model weights (batch_size=64)
 
 Key results
 -----------
@@ -85,13 +73,7 @@ Batch size = 64 (Fine Tuned - 10 epoch, unfreeze last 4 layers of vgg19)
 
 Usage
 -----
-1. Prepare dataset following this structure:
-	 - `pet_facial_expression_dataset/Angry/`
-	 - `pet_facial_expression_dataset/happy/`
-	 - `pet_facial_expression_dataset/Other/`
-	 - `pet_facial_expression_dataset/Sad/`
-	 Place images in the respective folders.
 
-2. Install dependencies: please refer to `requirements.txt` for complete package list. Python 3.11.0 is recommended. 
+- Install dependencies: please refer to `requirements.txt` for complete package list. Python 3.11.0 is recommended. 
 
-3. GPU is recommended for training. (CPU will be a lot slower)
+- GPU is recommended for training. (CPU will be a lot slower)
