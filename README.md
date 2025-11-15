@@ -1,79 +1,60 @@
-# Pet Facial Expression Classification (VGG19 Transfer Learning)
+# Pet facial expression classification
 
-Overview
---------
 This notebook implements a transfer-learning pipeline using VGG19 to classify pet facial expressions into four categories: Angry, happy, Other, Sad. It includes dataset preprocessing (resize & split), data augmentation, model training with two batch sizes (32 and 64), and evaluation (confusion matrices, ROC/AUC). While the primary goal is to compare the performance between batch size 32 and 64, , fine-tuning the superior model will also be included.
 
-Workflow (run cells top-to-bottom)
--------------------------------------------
-1. Data preprocessing
-- Import required libs (cv2, os, etc.).  
-- List and count images in dataset directories.  
-- Define `save_images()` and `make_dir()` helpers for resizing and saving.  
-- Split dataset into train/validation/test (split ration 80%/10%/10%) 
-- Resize all images to 224×224 (VGG19 requirement)
-- Save preprocessed images to output directory
+_Dataset_
+The dataset should be organized like this:
 
-Note: VGG19 requires specific preprocessing (mean subtraction, not 0-1 normalization). train, validation, and test sets are applied identically via `tf.keras.applications.vgg19.preprocess_input`
+- `pet_facial_expression_dataset/`
+    - `Angry/` (angry pet images)
+    - `happy/` (happy pet images)
+    - `Other/` (other expressions)
+    - `Sad/` (sad pet images)
 
-2. Dataset Pipeline Creation
+The preprocessing pipeline automatically splits this into 80% train, 10% validation, and 10% test, then resizes everything to 224×224 for VGG19. A new `preprocess_dataset folder` gets created with the proper train/val/test structure.
 
-- Create TensorFlow datasets with `image_dataset_from_directory`
-- apply data augmentation (`RandomFlip`, `RandomRotation`, `RandomZoom`, `RandomContrast`, `RandomTranslation`)
-- critical: apply VGG19-specific preprocessing (preprocess_input)
+Note:  VGG19 requires specific preprocessing that differs from simple normalization. Instead of scaling pixel values to the 0-1 range, VGG19 preprocessing involves mean subtraction based on ImageNet statistics. We handle this with `tf.keras.applications.vgg19.preprocess_input `, and it MUST be applied to train, val, AND test sets identically. 
 
-3. Model Building
+_Dataset Pipeline_
 
-- Load VGG19 base model (`include_top=False`)
-- freeze all VGG19 layers initially
-- add custom classification head:
+Create TensorFlow dataset pipelines that efficiently load images in batches. Then, we apply data augmentation (`RandomFlip`, `RandomRotation`, `RandomZoom`, `RandomContrast`, `RandomTranslation`) to make the model more robust before applying vgg19 preprocessing.
 
+_Model Building_
+
+After loading pretrained VGG19 base model (`include_top=False`), freeze all the layers so their learned featues stay intact. On top of the frozen base, we add our custom classigication head: 
   - GlobalAveragePooling2D
   - Dense(256, activation='relu')
   - Dropout(0.5)
   - Dense(4, activation='softmax')
+This head learns to map VGG19's powerful visual features to our four pet emotions. We then compile with Adam optimizer (lr=1e-3), and sparse categorical crossentropy loss.
 
+_Training_
+Train 2 separate models: one with batch_size=32 and one with batch_size=64, both for 10 epochs with the VGG19 base frozen.
+Between experiments, we rebuild the model from scratch so it can be a fair comparison. next, we save the weights from each experiment, and plot the training curves to see which batch size learns faster, more stably, and generalizes better. 
 
-- Compile with Adam optimizer (lr=1e-3), sparse categorical crossentropy loss
+_Evaluation_
+Time to see how well our models actually work on unseen data
 
-4. Training - Batch Size Comparison
+Load the test set (with proper preprocessin') and evaluate both models. Here, we also get to plot ROC curves for each class and calculate AUC scores to measure how well the model can distinguish each emotion.
 
-- Experiment 1: Train with batch_size=32 for 10 epochs
-- Experiment 2: Train with batch_size=64 for 10 epochs (fresh initialization)
-- Save weights after each experiment
-- Plot training/validation accuracy and loss curves
+**-> The batch 64 model consistently outperforms batch 32 across every metric.**
 
-5. Evaluation & Analysis
+_Fine Tuning_
+Since batch 64 won the showdown, we take those weights, and fine-tune them by unfreezing the last 4 layers of VGG19. This lets the deeper layers adapt specifically to pet faces while keeping the earlier layers (which learned general visual features) frozen. 
 
-- Load test dataset with proper preprocessing
-- Evaluate both models on test set
-- Generate confusion matrices for error analysis
-- Plot ROC curves and calculate AUC for each class
-- Compare performance metrics
+Wrecompile with a much lower LR (1e-5) to make gentle updates without breaking what's already learned, then train for another 10 epochs. This should typically add another 2-3% accuracy boost as the model's features get more specialized.
 
-6. Fine-Tuning the best-performing model weights (batch_size=64)
+_Key Result_
 
-Key results
------------
-Batch size = 32
-- train accuracy = 0.8737
-- validation accuracy = 0.8100
-- test accuracy = 0.82
+**Batch 32**
+- train: 87.37% | val: 81% | test: 82%
+- decent performance but leaves rroom for improvement
+**Batch 64**
+- train: 93.5% | val: 90% | test: 87%
+- +5% improvement on test accuracy, more stable with smoother convergence
+**Batch 64 Fine-tuned**
+- train: 97.62% | val: 93% | test: 89%
 
-Batch size = 64
-- train accuracy = 0.9350
-- validation accuracy = 0.9000
-- test accuracy = 0.87
-
-Batch size = 64 (Fine Tuned - 10 epoch, unfreeze last 4 layers of vgg19)
-- train accuracy = 0.9762
-- validation accuracy = 0.9300
-- test accuracy = 0.89
-
-
-Usage
------
-
-- Install dependencies: please refer to `requirements.txt` for complete package list. Python 3.11.0 is recommended. 
-
+_Usage_
+- Install dependencies: please refer to `requirements.txt` for complete package list. 
 - GPU is recommended for training. (CPU will be a lot slower)
