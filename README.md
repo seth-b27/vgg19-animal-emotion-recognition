@@ -3,6 +3,7 @@
 This notebook implements a transfer-learning pipeline using VGG19 to classify pet facial expressions into four categories: Angry, happy, Other, Sad. It includes dataset preprocessing (resize & split), data augmentation, model training with two batch sizes (32 and 64), and evaluation (confusion matrices, ROC/AUC). While the primary goal is to compare the performance between batch size 32 and 64, , fine-tuning the superior model will also be included.
 
 _Dataset_
+
 The dataset should be organized like this:
 
 - `pet_facial_expression_dataset/`
@@ -29,10 +30,13 @@ After loading pretrained VGG19 base model (`include_top=False`), freeze all the 
 This head learns to map VGG19's powerful visual features to our four pet emotions. We then compile with Adam optimizer (lr=1e-3), and sparse categorical crossentropy loss.
 
 _Training_
+
 Train 2 separate models: one with batch_size=32 and one with batch_size=64, both for 10 epochs with the VGG19 base frozen.
+
 Between experiments, we rebuild the model from scratch so it can be a fair comparison. next, we save the weights from each experiment, and plot the training curves to see which batch size learns faster, more stably, and generalizes better. 
 
 _Evaluation_
+
 Time to see how well our models actually work on unseen data
 
 Load the test set (with proper preprocessin') and evaluate both models. Here, we also get to plot ROC curves for each class and calculate AUC scores to measure how well the model can distinguish each emotion.
@@ -40,9 +44,10 @@ Load the test set (with proper preprocessin') and evaluate both models. Here, we
 **-> The batch 64 model consistently outperforms batch 32 across every metric.**
 
 _Fine Tuning_
+
 Since batch 64 won the showdown, we take those weights, and fine-tune them by unfreezing the last 4 layers of VGG19. This lets the deeper layers adapt specifically to pet faces while keeping the earlier layers (which learned general visual features) frozen. 
 
-Wrecompile with a much lower LR (1e-5) to make gentle updates without breaking what's already learned, then train for another 10 epochs. This should typically add another 2-3% accuracy boost as the model's features get more specialized.
+We recompile with a much lower LR (1e-5) to make gentle updates without breaking what's already learned, then train for another 10 epochs. This should typically add another 2-3% accuracy boost as the model's features get more specialized.
 
 _Key Result_
 
@@ -56,5 +61,6 @@ _Key Result_
 - train: 97.62% | val: 93% | test: 89%
 
 _Usage_
+
 - Install dependencies: please refer to `requirements.txt` for complete package list. 
 - GPU is recommended for training. (CPU will be a lot slower)
